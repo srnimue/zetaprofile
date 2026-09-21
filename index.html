@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zeta {{user}} プロフィール管理</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--text:#222;--muted:#777;--line:#ddd;--accent:#555;--danger:#b33}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+button,input,textarea{font:inherit} button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 13px}
+button:hover{background:#f0f0f0}.primary{background:#222;color:#fff;border-color:#222}.primary:hover{background:#444}.danger{color:var(--danger)}
+header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:17px;margin:0}.wrap{max-width:1050px;margin:auto;padding:22px 16px 60px}
+.hidden{display:none!important}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 2px 8px #00000008}
+.card img,.placeholder{width:100%;aspect-ratio:1/1;object-fit:cover;background:#e8e8eb;display:block}.placeholder{display:grid;place-items:center;color:#999;font-size:38px}.card-body{padding:12px}.name{font-weight:700}.plot{font-size:13px;color:var(--muted);margin-top:5px}.count{font-size:11px;color:var(--muted);margin-top:9px}
+.back{margin-bottom:14px}.editor{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+.top{display:grid;grid-template-columns:180px 1fr;gap:18px}.avatarbox img,.avatarbox .placeholder{width:180px;height:180px;border-radius:14px;object-fit:cover}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}
+.field{margin-bottom:12px}.profile-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}.rowhead{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
+.section-title{font-weight:700;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.template{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:8px}.template-top{display:flex;gap:8px;align-items:flex-start}.template-top input[type=checkbox]{width:auto;margin-top:4px}.template-text{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:7px}.copybox{min-height:280px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px}
+.status{font-size:12px;color:var(--muted);margin-left:8px}
+@media(max-width:650px){.top{grid-template-columns:1fr}.avatarbox img,.avatarbox .placeholder{width:150px;height:150px}.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><h1>Zeta {{user}} プロフィール管理</h1><span id="saveStatus" class="status">自動保存</span></header>
+<div class="wrap">
+<section id="home">
+  <div class="toolbar"><button class="primary" onclick="newProfile()">＋ 新しい{{user}}</button><button onclick="openTemplates()">定型文ライブラリ</button></div>
+  <div id="grid" class="grid"></div>
+</section>
+
+<section id="edit" class="hidden">
+  <button class="back" onclick="goHome()">← ホーム</button>
+  <div class="editor top">
+    <div class="avatarbox" id="avatar"></div>
+    <div>
+      <div class="field"><label>{{user}}名</label><input id="userName" placeholder="例：にみゅ" oninput="autosave()"></div>
+      <div class="field"><label>プロット名</label><input id="plotName" placeholder="例：九十九相談事務所" oninput="autosave()"></div>
+      <div class="field"><label>この{{user}}についてのメモ</label><textarea id="plotMemo" placeholder="どんなプロット用なのか、使い分けなど…" oninput="autosave()"></textarea></div>
+      <div class="actions"><label style="margin:0"><button onclick="chooseImage()">画像を変更</button></label><button class="danger" onclick="deleteCurrent()">この{{user}}を削除</button></div>
+      <input id="imageInput" type="file" accept="image/*" hidden onchange="loadImage(event)">
+    </div>
+  </div>
+
+  <div class="editor">
+    <div class="section-title">プロフィール設定</div>
+    <div id="fields"></div>
+    <button onclick="addField()">＋ 項目を追加</button>
+  </div>
+
+  <div class="editor">
+    <div class="section-title">定型指示</div>
+    <div id="templates"></div>
+    <div class="actions"><button onclick="openTemplates()">定型文ライブラリを編集</button></div>
+  </div>
+
+  <div class="editor">
+    <div class="section-title">Zeta貼り付け用</div>
+    <textarea id="output" class="copybox" readonly></textarea>
+    <div class="actions" style="margin-top:10px"><button class="primary" onclick="copyOutput()">一括コピー</button><button onclick="refreshOutput()">再生成</button></div>
+  </div>
+</section>
+
+<section id="templatePage" class="hidden">
+  <button class="back" onclick="goHome()">← ホーム</button>
+  <div class="editor">
+    <div class="section-title">定型文ライブラリ</div>
+    <p style="font-size:13px;color:#777">よく使うAI・ナレーターへの指示を登録して、各{{user}}プロフィールから選択できます。</p>
+    <div id="templateLibrary"></div>
+    <button onclick="addTemplate()">＋ 定型文を追加</button>
+  </div>
+</section>
+</div>
+
+<script>
+const KEY="zetaProfileManager_v1";
+let db=JSON.parse(localStorage.getItem(KEY)||'{"profiles":[],"templates":[]}');
+let currentId=null;
+
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(db)); document.getElementById("saveStatus").textContent="保存済み";}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function newProfile(){
+ const p={id:uid(),name:"",plot:"",memo:"",image:"",fields:[],templateIds:[]};
+ db.profiles.unshift(p);saveDB();openProfile(p.id);
+}
+function renderHome(){
+ document.getElementById("home").classList.remove("hidden");document.getElementById("edit").classList.add("hidden");document.getElementById("templatePage").classList.add("hidden");
+ const g=document.getElementById("grid");
+ if(!db.profiles.length){g.innerHTML='<div style="grid-column:1/-1;color:#777">まだ{{user}}がありません。「新しい{{user}}」から作成できます。</div>';return}
+ g.innerHTML=db.profiles.map(p=>`<div class="card" onclick="openProfile('${p.id}')">
+ ${p.image?`<img src="${p.image}" alt="">`:'<div class="placeholder">＋</div>'}
+ <div class="card-body"><div class="name">${esc(p.name||"無題の{{user}}")}</div><div class="plot">${esc(p.plot||"プロット名未設定")}</div><div class="count">${p.fields.length}項目 / ${p.templateIds.length}個の定型指示</div></div></div>`).join("");
+}
+function openProfile(id){
+ currentId=id;const p=db.profiles.find(x=>x.id===id);if(!p)return;
+ document.getElementById("home").classList.add("hidden");document.getElementById("templatePage").classList.add("hidden");document.getElementById("edit").classList.remove("hidden");
+ userName.value=p.name;plotName.value=p.plot;plotMemo.value=p.memo;renderAvatar();renderFields();renderSelectedTemplates();refreshOutput();
+}
+function renderAvatar(){const p=db.profiles.find(x=>x.id===currentId);avatar.innerHTML=p.image?`<img src="${p.image}" alt="">`:'<div class="placeholder">＋</div>'}
+function chooseImage(){imageInput.click()}
+function loadImage(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{db.profiles.find(x=>x.id===currentId).image=r.result;saveDB();renderAvatar();renderHome()};r.readAsDataURL(f)}
+function autosave(){
+ const p=db.profiles.find(x=>x.id===currentId);if(!p)return;p.name=userName.value;p.plot=plotName.value;p.memo=plotMemo.value;saveDB();refreshOutput();renderHome()
+}
+function addField(){const p=db.profiles.find(x=>x.id===currentId);p.fields.push({id:uid(),label:"新しい項目",value:""});saveDB();renderFields();refreshOutput()}
+function renderFields(){
+ const p=db.profiles.find(x=>x.id===currentId);const box=document.getElementById("fields");
+ box.innerHTML=p.fields.map((f,i)=>`<div class="profile-row"><div class="rowhead"><input value="${esc(f.label)}" oninput="fieldChange(${i},'label',this.value)"><button class="danger" onclick="removeField(${i})">削除</button></div><textarea placeholder="内容…" oninput="fieldChange(${i},'value',this.value)">${esc(f.value)}</textarea></div>`).join("");
+}
+function fieldChange(i,k,v){db.profiles.find(x=>x.id===currentId).fields[i][k]=v;saveDB();refreshOutput()}
+function removeField(i){db.profiles.find(x=>x.id===currentId).fields.splice(i,1);saveDB();renderFields();refreshOutput()}
+function renderSelectedTemplates(){
+ const p=db.profiles.find(x=>x.id===currentId), box=document.getElementById("templates");
+ box.innerHTML=db.templates.map(t=>`<div class="template"><div class="template-top"><input type="checkbox" ${p.templateIds.includes(t.id)?"checked":""} onchange="toggleTemplate('${t.id}',this.checked)"><strong>${esc(t.title)}</strong></div><div class="template-text">${esc(t.text)}</div></div>`).join("") || '<span style="color:#777">定型文がありません。</span>';
+}
+function toggleTemplate(id,on){const p=db.profiles.find(x=>x.id===currentId);p.templateIds=on?[...new Set([...p.templateIds,id])]:p.templateIds.filter(x=>x!==id);saveDB();refreshOutput();renderSelectedTemplates()}
+function refreshOutput(){
+ const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
+ let s="【{{user}}プロフィール】\n";
+ if(p.name)s+="{{user}}名："+p.name+"\n"; if(p.plot)s+="プロット："+p.plot+"\n"; if(p.memo)s+="メモ："+p.memo+"\n";
+ for(const f of p.fields){if(f.label||f.value)s+=`\n【${f.label||"項目"}】\n${f.value||""}\n`}
+ const ts=db.templates.filter(t=>p.templateIds.includes(t.id));
+ if(ts.length){s+="\n【AI・ナレーターへの指示】\n";ts.forEach(t=>s+="\n"+t.text+"\n")}
+ output.value=s.trim();
+}
+async function copyOutput(){try{await navigator.clipboard.writeText(output.value);saveStatus.textContent="コピーしました";setTimeout(()=>saveStatus.textContent="自動保存",1200)}catch(e){output.select();document.execCommand("copy")}}
+function deleteCurrent(){if(!confirm("この{{user}}を削除しますか？"))return;db.profiles=db.profiles.filter(p=>p.id!==currentId);currentId=null;saveDB();renderHome()}
+function goHome(){currentId=null;renderHome()}
+function openTemplates(){document.getElementById("home").classList.add("hidden");document.getElementById("edit").classList.add("hidden");document.getElementById("templatePage").classList.remove("hidden");renderLibrary()}
+function addTemplate(){db.templates.push({id:uid(),title:"新しい定型文",text:""});saveDB();renderLibrary()}
+function renderLibrary(){
+ const box=document.getElementById("templateLibrary");
+ box.innerHTML=db.templates.map((t,i)=>`<div class="profile-row"><div class="rowhead"><input value="${esc(t.title)}" oninput="db.templates[${i}].title=this.value;saveDB();renderSelectedTemplates()"><button class="danger" onclick="db.templates.splice(${i},1);saveDB();renderLibrary();renderSelectedTemplates()">削除</button></div><textarea placeholder="AI・ナレーターへの指示…" oninput="db.templates[${i}].text=this.value;saveDB();renderSelectedTemplates();refreshOutput()">${esc(t.text)}</textarea></div>`).join("") || '<span style="color:#777">まだ定型文がありません。</span>';
+}
+function seed(){
+ if(db.templates.length)return;
+ db.templates=[
+ {id:uid(),title:"{{user}}の勝手な行動を防止",text:"{{user}}の行動・発言・感情を勝手に決定しない。{{user}}の反応が必要な場面では、相手側の行動や状況まで描写して止める。"},
+ {id:uid(),title:"質問の連続を防止",text:"AI・ナレーターは{{user}}への質問を連続して繰り返さない。会話を質問だけで進行させず、状況描写やキャラクター側の発言・行動も自然に含める。"},
+ {id:uid(),title:"設定の勝手な追加を防止",text:"ユーザーが指定していない新しいキャラクター、出来事、設定を勝手に追加しない。既存の設定・関係性・時系列を優先する。"}
+ ];saveDB()
+}
+seed();renderHome();
+</script>
+</body>
+</html>
