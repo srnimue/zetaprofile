@@ -16,24 +16,12 @@ header h1{font-size:17px;margin:0}.wrap{max-width:1050px;margin:auto;padding:22p
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 2px 8px #00000008}
 .card img,.placeholder{width:100%;aspect-ratio:1/1;object-fit:cover;background:#e8e8eb;display:block}.placeholder{display:grid;place-items:center;color:#999;font-size:38px}.card-body{padding:12px}.name{font-weight:700}.plot{font-size:13px;color:var(--muted);margin-top:5px}.count{font-size:11px;color:var(--muted);margin-top:9px}
 .back{margin-bottom:14px}.editor{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
-.top{display:grid;grid-template-columns:180px 1fr;gap:18px}.avatarbox img,.avatarbox .placeholder{width:180px;height:180px;border-radius:14px;object-fit:cover}
+.top{display:grid;grid-template-columns:180px 1fr;gap:18px}.avatarbox img,.avatarbox .placeholder{width:180px;height:180px;border-radius:14px;object-fit:cover;cursor:pointer}
 label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}
 .field{margin-bottom:12px}.profile-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}.rowhead{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
 .section-title{font-weight:700;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.template{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:8px}.template-top{display:flex;gap:8px;align-items:flex-start}.template-top input[type=checkbox]{width:auto;margin-top:4px}.template-text{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:7px}.copybox{min-height:280px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px}
 .status{font-size:12px;color:var(--muted);margin-left:8px}
 @media(max-width:650px){.top{grid-template-columns:1fr}.avatarbox img,.avatarbox .placeholder{width:150px;height:150px}.grid{grid-template-columns:repeat(2,1fr)}}
-</style>
-
-<style id="v3_1_style">
-.output-card{margin-top:12px;overflow:hidden}
-.output-head{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer}
-.output-head-left{display:flex;align-items:center;gap:8px}
-.output-chevron{width:1em;transition:transform .15s ease}
-.output-card.collapsed .output-chevron{transform:rotate(-90deg)}
-.output-card.collapsed .output-body{display:none}
-.output-copy{white-space:nowrap}
-.editor-topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-.type-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
 </style>
 </head>
 <body>
@@ -45,14 +33,14 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,texta
 </section>
 
 <section id="edit" class="hidden">
-  <button class="back" onclick="goHome()">← ホーム</button>
+  <div class="back" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><button onclick="goHome()">← ホーム</button><button class="danger" onclick="deleteCurrent()">この{{user}}を削除</button></div>
   <div class="editor top">
-    <div class="avatarbox" id="avatar"></div>
+    <div class="avatarbox" id="avatar" onclick="chooseImage()" title="クリックして画像を変更"></div>
     <div>
       <div class="field"><label>{{user}}名</label><input id="userName" placeholder="例：にみゅ" oninput="autosave()"></div>
       <div class="field"><label>プロット名</label><input id="plotName" placeholder="例：九十九相談事務所" oninput="autosave()"></div>
       <div class="field"><label>この{{user}}についてのメモ</label><textarea id="plotMemo" placeholder="どんなプロット用なのか、使い分けなど…" oninput="autosave()"></textarea></div>
-      <div class="actions"><label style="margin:0"><button onclick="chooseImage()">画像を変更</button></label><button class="danger" onclick="deleteCurrent()">この{{user}}を削除</button></div>
+      <div class="actions"><button onclick="chooseImage()">画像を変更</button><button class="danger" onclick="deleteImage()">画像を削除</button></div>
       <input id="imageInput" type="file" accept="image/*" hidden onchange="loadImage(event)">
     </div>
   </div>
@@ -64,37 +52,16 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,texta
   </div>
 
   <div class="editor">
-    <div class="section-title">定型指示</div>
-    <div id="templates"></div>
-    <div class="actions"><button onclick="openTemplates()">定型文ライブラリを編集</button></div>
+    <details open>
+      <summary class="section-title" style="cursor:pointer">定型指示</summary>
+      <div id="templates"></div>
+      <div class="actions"><button onclick="openTemplates()">定型文ライブラリを編集</button></div>
+    </details>
   </div>
 
   <div class="editor">
     <div class="section-title">Zeta貼り付け用</div>
-    <div id="outputSection">
-<div class="output-card card" id="outputAI">
-  <div class="output-head" onclick="toggleOutput('outputAI')">
-    <div class="output-head-left"><span class="output-chevron">▼</span><strong>AI・ナレーターへの指示</strong></div>
-    <button class="secondary output-copy" onclick="event.stopPropagation();copyPart('ai')">この部分をコピー</button>
-  </div>
-  <div class="output-body"><textarea id="outputAIText" readonly></textarea></div>
-</div>
-<div class="output-card card" id="outputProfile">
-  <div class="output-head" onclick="toggleOutput('outputProfile')">
-    <div class="output-head-left"><span class="output-chevron">▼</span><strong>プロフィール</strong></div>
-    <button class="secondary output-copy" onclick="event.stopPropagation();copyPart('profile')">この部分をコピー</button>
-  </div>
-  <div class="output-body"><textarea id="outputProfileText" readonly></textarea></div>
-</div>
-<div class="output-card card" id="outputAdditional">
-  <div class="output-head" onclick="toggleOutput('outputAdditional')">
-    <div class="output-head-left"><span class="output-chevron">▼</span><strong>追加項目</strong></div>
-    <button class="secondary output-copy" onclick="event.stopPropagation();copyPart('additional')">この部分をコピー</button>
-  </div>
-  <div class="output-body"><textarea id="outputAdditionalText" readonly></textarea></div>
-</div>
-<button class="primary" onclick="copyPart('all')">3つ全部まとめてコピー</button>
-</div>
+    <textarea id="output" class="copybox" readonly></textarea>
     <div class="actions" style="margin-top:10px"><button class="primary" onclick="copyOutput()">一括コピー</button><button onclick="refreshOutput()">再生成</button></div>
   </div>
 </section>
@@ -137,6 +104,7 @@ function openProfile(id){
 }
 function renderAvatar(){const p=db.profiles.find(x=>x.id===currentId);avatar.innerHTML=p.image?`<img src="${p.image}" alt="">`:'<div class="placeholder">＋</div>'}
 function chooseImage(){imageInput.click()}
+function deleteImage(){const p=db.profiles.find(x=>x.id===currentId);if(!p||!p.image)return;if(confirm("画像を削除しますか？")){p.image="";saveDB();renderAvatar();renderHome()}}
 function loadImage(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{db.profiles.find(x=>x.id===currentId).image=r.result;saveDB();renderAvatar();renderHome()};r.readAsDataURL(f)}
 function autosave(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;p.name=userName.value;p.plot=plotName.value;p.memo=plotMemo.value;saveDB();refreshOutput();renderHome()
@@ -155,12 +123,16 @@ function renderSelectedTemplates(){
 function toggleTemplate(id,on){const p=db.profiles.find(x=>x.id===currentId);p.templateIds=on?[...new Set([...p.templateIds,id])]:p.templateIds.filter(x=>x!==id);saveDB();refreshOutput();renderSelectedTemplates()}
 function refreshOutput(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
- let s="【プロフィール】\n";
- if(p.name)s+="{{user}}名："+p.name+"\n"; if(p.plot)s+="プロット："+p.plot+"\n"; if(p.memo)s+="メモ："+p.memo+"\n";
- for(const f of p.fields){if(f.label||f.value)s+=`\n【${f.label||"項目"}】\n${f.value||""}\n`}
+ let s="";
  const ts=db.templates.filter(t=>p.templateIds.includes(t.id));
- if(ts.length){s+="\n【AI・ナレーターへの指示】\n";ts.forEach(t=>s+="\n"+t.text+"\n")}
- output.value=s.trim();
+ if(ts.length){s+="【AI・ナレーターへの指示】\n";ts.forEach(t=>s+="\n"+t.text+"\n")}
+ if(p.name || p.memo || p.fields.length){
+   s+="\n【プロフィール】\n";
+   if(p.name)s+="{{user}}名："+p.name+"\n";
+   if(p.memo)s+="\n"+p.memo+"\n";
+   for(const f of p.fields){if(f.label||f.value)s+=`\n【${f.label||"項目"}】\n${f.value||""}\n`}
+ }
+ output.value=s.trim().replaceAll("{{user}}", p.name || "{{user}}");
 }
 async function copyOutput(){try{await navigator.clipboard.writeText(output.value);saveStatus.textContent="コピーしました";setTimeout(()=>saveStatus.textContent="自動保存",1200)}catch(e){output.select();document.execCommand("copy")}}
 function deleteCurrent(){if(!confirm("この{{user}}を削除しますか？"))return;db.profiles=db.profiles.filter(p=>p.id!==currentId);currentId=null;saveDB();renderHome()}
@@ -180,52 +152,6 @@ function seed(){
  ];saveDB()
 }
 seed();renderHome();
-
-function normalizeFieldTypes(){
-  if(currentProfile && Array.isArray(currentProfile.fields)){
-    currentProfile.fields.forEach(f=>{if(!f.type)f.type='profile';});
-  }
-}
-function replaceUserName(text){
-  const name=(currentProfile&&currentProfile.name&&currentProfile.name.trim())||'{{user}}';
-  return String(text??'').replaceAll('{{user}}',name);
-}
-function updateZetaOutputs(){
-  if(!currentProfile)return;
-  normalizeFieldTypes();
-  const selected=(currentProfile.templates||[]).map(id=>templates.find(t=>t.id===id)).filter(Boolean);
-  const ai=selected.map(t=>`【${replaceUserName(t.title)}】\n${replaceUserName(t.body)}`).join('\n\n');
-  const fields=currentProfile.fields||[];
-  const fmt=arr=>arr.map(f=>`【${replaceUserName(f.name)}】\n${replaceUserName(f.value)}`).join('\n\n');
-  const profile=[`【プロフィール】`,`名前：${replaceUserName(currentProfile.name||'')}`,fmt(fields.filter(f=>(f.type||'profile')==='profile'))].filter(Boolean).join('\n\n');
-  const additional=[`【追加項目】`,fmt(fields.filter(f=>f.type==='additional'))].filter(Boolean).join('\n\n');
-  window.zetaOutputs={ai,profile,additional};
-  const a=document.getElementById('outputAIText'),p=document.getElementById('outputProfileText'),d=document.getElementById('outputAdditionalText');
-  if(a)a.value=ai;if(p)p.value=profile;if(d)d.value=additional;
-}
-function toggleOutput(id){
-  const e=document.getElementById(id);if(!e)return;
-  e.classList.toggle('collapsed');
-  if(currentProfile){
-    currentProfile.outputCollapsed=currentProfile.outputCollapsed||{};
-    const k=id==='outputAI'?'ai':id==='outputProfile'?'profile':'additional';
-    currentProfile.outputCollapsed[k]=e.classList.contains('collapsed');
-    if(typeof saveProfiles==='function')saveProfiles();
-  }
-}
-function restoreOutputState(){
-  const s=(currentProfile&&currentProfile.outputCollapsed)||{};
-  [['outputAI','ai'],['outputProfile','profile'],['outputAdditional','additional']].forEach(([id,k])=>{
-    const e=document.getElementById(id);if(e)e.classList.toggle('collapsed',!!s[k]);
-  });
-}
-async function copyPart(part){
-  updateZetaOutputs();
-  const o=window.zetaOutputs||{ai:'',profile:'',additional:''};
-  const text=part==='all'?[o.ai,o.profile,o.additional].filter(Boolean).join('\n\n'):o[part]||'';
-  try{await navigator.clipboard.writeText(text);if(typeof toast==='function')toast('コピーしました');}catch(e){alert('コピーに失敗しました');}
-}
-document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>{updateZetaOutputs();restoreOutputState();},80));
 </script>
 </body>
 </html>
