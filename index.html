@@ -115,11 +115,13 @@ function autosave(){
 }
 function applyProfileTemplate(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
- const labels=["名前","性別","年齢","身長","外見","好き","嫌い"];
- let added=0;
- for(const label of labels){if(!p.fields.some(f=>f.label===label)){p.fields.push({id:uid(),label,value:""});added++;}}
- saveDB();renderFields();refreshOutput();
- if(added===0) alert("プロフィールテンプレの項目はすでに入っています。");
+ const template="名前：\n性別：\n年齢：\n身長：\n外見：\n好き：\n嫌い：";
+ const current=(p.memo||"").trim();
+ if(current.includes("名前：") && current.includes("嫌い：")){alert("プロフィールテンプレはすでに入っています。");return;}
+ p.memo=current ? current+"\n\n"+template : template;
+ plotMemo.value=p.memo;
+ saveDB();
+ refreshOutput();
 }
 function addField(){const p=db.profiles.find(x=>x.id===currentId);p.fields.push({id:uid(),label:"新しい項目",value:""});saveDB();renderFields();refreshOutput()}
 function renderFields(){
