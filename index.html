@@ -17,7 +17,7 @@ header h1{font-size:17px;margin:0}.wrap{max-width:1050px;margin:auto;padding:22p
 .card img,.placeholder{width:100%;aspect-ratio:1/1;object-fit:cover;background:#e8e8eb;display:block}.placeholder{display:grid;place-items:center;color:#999;font-size:38px}.card-body{padding:12px}.name{font-weight:700}.plot{font-size:13px;color:var(--muted);margin-top:5px}.count{font-size:11px;color:var(--muted);margin-top:9px}
 .back{margin-bottom:14px}.editor{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
 .top{display:grid;grid-template-columns:180px 1fr;gap:18px}.avatarbox img,.avatarbox .placeholder{width:180px;height:180px;border-radius:14px;object-fit:cover;cursor:pointer}
-label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}.template-btn{margin:0 0 12px}
 .field{margin-bottom:12px}.profile-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}.rowhead{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
 .section-title{font-weight:700;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.template{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:8px}.template-top{display:flex;gap:8px;align-items:flex-start}.template-top input[type=checkbox]{width:auto;margin-top:4px}.template-text{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:7px}.copybox{min-height:280px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px}
 .status{font-size:12px;color:var(--muted);margin-left:8px}
@@ -39,16 +39,20 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,texta
     <div>
       <div class="field"><label>{{user}}名</label><input id="userName" placeholder="例：にみゅ" oninput="autosave()"></div>
       <div class="field"><label>プロット名</label><input id="plotName" placeholder="例：九十九相談事務所" oninput="autosave()"></div>
-      <div class="field"><label>この{{user}}についてのメモ</label><textarea id="plotMemo" placeholder="どんなプロット用なのか、使い分けなど…" oninput="autosave()"></textarea></div>
+      <div class="field"><label>プロフィール</label><textarea id="plotMemo" placeholder="どんなプロット用なのか、使い分けなど…" oninput="autosave()"></textarea></div>
+      <button class="template-btn" onclick="applyProfileTemplate()">プロフィールテンプレを入れる</button>
       <div class="actions"><button onclick="chooseImage()">画像を変更</button><button class="danger" onclick="deleteImage()">画像を削除</button></div>
       <input id="imageInput" type="file" accept="image/*" hidden onchange="loadImage(event)">
     </div>
   </div>
 
   <div class="editor">
-    <div class="section-title">プロフィール設定</div>
-    <div id="fields"></div>
-    <button onclick="addField()">＋ 項目を追加</button>
+    <details open>
+      <summary class="section-title" style="cursor:pointer">追加項目</summary>
+      <div style="margin:10px 0 12px;color:#777;font-size:13px">記憶メモ・備考など、基本プロフィール以外の情報を入れる欄です。</div>
+      <div id="fields"></div>
+      <button onclick="addField()">＋ 項目を追加</button>
+    </details>
   </div>
 
   <div class="editor">
@@ -104,10 +108,18 @@ function openProfile(id){
 }
 function renderAvatar(){const p=db.profiles.find(x=>x.id===currentId);avatar.innerHTML=p.image?`<img src="${p.image}" alt="">`:'<div class="placeholder">＋</div>'}
 function chooseImage(){imageInput.click()}
-function deleteImage(){const p=db.profiles.find(x=>x.id===currentId);if(!p||!p.image)return;if(confirm("画像を削除しますか？")){p.image="";saveDB();renderAvatar();renderHome()}}
-function loadImage(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{db.profiles.find(x=>x.id===currentId).image=r.result;saveDB();renderAvatar();renderHome()};r.readAsDataURL(f)}
+function deleteImage(){const p=db.profiles.find(x=>x.id===currentId);if(!p||!p.image)return;if(confirm("画像を削除しますか？")){p.image="";saveDB();renderAvatar()}}
+function loadImage(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{db.profiles.find(x=>x.id===currentId).image=r.result;saveDB();renderAvatar()};r.readAsDataURL(f)}
 function autosave(){
- const p=db.profiles.find(x=>x.id===currentId);if(!p)return;p.name=userName.value;p.plot=plotName.value;p.memo=plotMemo.value;saveDB();refreshOutput();renderHome()
+ const p=db.profiles.find(x=>x.id===currentId);if(!p)return;p.name=userName.value;p.plot=plotName.value;p.memo=plotMemo.value;saveDB();refreshOutput()
+}
+function applyProfileTemplate(){
+ const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
+ const labels=["名前","性別","年齢","身長","外見","好き","嫌い"];
+ let added=0;
+ for(const label of labels){if(!p.fields.some(f=>f.label===label)){p.fields.push({id:uid(),label,value:""});added++;}}
+ saveDB();renderFields();refreshOutput();
+ if(added===0) alert("プロフィールテンプレの項目はすでに入っています。");
 }
 function addField(){const p=db.profiles.find(x=>x.id===currentId);p.fields.push({id:uid(),label:"新しい項目",value:""});saveDB();renderFields();refreshOutput()}
 function renderFields(){
