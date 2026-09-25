@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zeta {{user}} プロフィール管理</title>
+<title>Zeta {{user}} プロフィール管理 V3</title>
 <style>
 :root{--bg:#f5f5f7;--card:#fff;--text:#222;--muted:#777;--line:#ddd;--accent:#555;--danger:#b33}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
@@ -17,7 +17,7 @@ header h1{font-size:17px;margin:0}.wrap{max-width:1050px;margin:auto;padding:22p
 .card img,.placeholder{width:100%;aspect-ratio:1/1;object-fit:cover;background:#e8e8eb;display:block}.placeholder{display:grid;place-items:center;color:#999;font-size:38px}.card-body{padding:12px}.name{font-weight:700}.plot{font-size:13px;color:var(--muted);margin-top:5px}.count{font-size:11px;color:var(--muted);margin-top:9px}
 .back{margin-bottom:14px}.editor{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
 .top{display:grid;grid-template-columns:180px 1fr;gap:18px}.avatarbox img,.avatarbox .placeholder{width:180px;height:180px;border-radius:14px;object-fit:cover;cursor:pointer}
-label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}.count-wrap{margin-top:4px}.template-btn{margin:0 0 12px}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}#plotMemo{min-height:180px}.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}.count-wrap{margin-top:4px}.template-btn{margin:0 0 12px}
 .field{margin-bottom:12px}.profile-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}.rowhead{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
 .section-title{font-weight:700;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.template{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:8px}.template-top{display:flex;gap:8px;align-items:flex-start}.template-top input[type=checkbox]{width:auto;margin-top:4px}.template-text{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:7px}.copybox{min-height:280px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px}
 .status{font-size:12px;color:var(--muted);margin-left:8px}
@@ -37,8 +37,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,texta
   <div class="editor top">
     <div class="avatarbox" id="avatar" onclick="chooseImage()" title="クリックして画像を変更"></div>
     <div>
-      <div class="field"><label>{{user}}名</label><input id="userName" placeholder="例：にみゅ" oninput="autosave()"></div>
-      <div class="field"><label>プロット名</label><input id="plotName" placeholder="例：九十九相談事務所" oninput="autosave()"></div>
+      <div class="field"><label>{{user}}名</label><input id="userName" placeholder="{{user}}の名前" oninput="autosave()"></div>
+      <div class="field"><label>プロット名</label><input id="plotName" placeholder="使用プロット名" oninput="autosave()"></div>
       <div class="field"><label>プロフィール</label><textarea id="plotMemo" placeholder="基本プロフィールを入力…" oninput="autosave()"></textarea><div id="profileCount" class="char-count">0文字</div></div>
       <button class="template-btn" onclick="applyProfileTemplate()">プロフィールテンプレを入れる</button>
       <div class="actions"><button onclick="chooseImage()">画像を変更</button><button class="danger" onclick="deleteImage()">画像を削除</button></div>
@@ -124,10 +124,10 @@ function applyProfileTemplate(){
  saveDB();
  refreshOutput();
 }
-function addField(){const p=db.profiles.find(x=>x.id===currentId);p.fields.push({id:uid(),label:"新しい項目",value:""});saveDB();renderFields();refreshOutput()}
+function addField(){const p=db.profiles.find(x=>x.id===currentId);p.fields.push({id:uid(),label:"",value:""});saveDB();renderFields();refreshOutput()}
 function renderFields(){
  const p=db.profiles.find(x=>x.id===currentId);const box=document.getElementById("fields");
- box.innerHTML=p.fields.map((f,i)=>`<div class="profile-row"><div class="rowhead"><input value="${esc(f.label)}" oninput="fieldChange(${i},'label',this.value)"><button class="danger" onclick="removeField(${i})">削除</button></div><textarea placeholder="内容…" oninput="fieldChange(${i},'value',this.value)">${esc(f.value)}</textarea></div>`).join("");
+ box.innerHTML=p.fields.map((f,i)=>`<div class="profile-row"><div class="rowhead"><input value="${esc(f.label)}" placeholder="例：記憶メモ" oninput="fieldChange(${i},'label',this.value)"><button class="danger" onclick="removeField(${i})">削除</button></div><textarea placeholder="例：二人の関係や覚えておきたい設定など" oninput="fieldChange(${i},'value',this.value)">${esc(f.value)}</textarea></div>`).join("");
 }
 function fieldChange(i,k,v){db.profiles.find(x=>x.id===currentId).fields[i][k]=v;saveDB();refreshOutput()}
 function removeField(i){db.profiles.find(x=>x.id===currentId).fields.splice(i,1);saveDB();renderFields();refreshOutput()}
@@ -140,12 +140,21 @@ function refreshOutput(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
  let s="";
  const ts=db.templates.filter(t=>p.templateIds.includes(t.id));
- if(ts.length){s+="【AI・ナレーターへの指示】";ts.forEach(t=>s+="\n"+t.text+"\n")}
- if(p.name || p.memo || p.fields.length){
-   if(s)s+="\n";
-   s+="【プロフィール】";
-   if(p.memo)s+="\n"+p.memo;
-   for(const f of p.fields){if(f.label||f.value)s+="\n"+(f.label||"項目")+"：\n"+(f.value||"")}
+ if(ts.length){s+="【AI・ナレーターへの指示】";ts.forEach((t,i)=>s+=(i?"
+":"")+t.text)}
+ if(p.memo){
+   if(s)s+="
+";
+   s+="【プロフィール】"+p.memo;
+ }
+ const fields=p.fields.filter(f=>f.label||f.value);
+ if(fields.length){
+   if(s)s+="
+";
+   s+="【追加項目】";
+   fields.forEach((f,i)=>{s+=(i?"
+":"")+(f.label||"項目")+"：
+"+(f.value||"")});
  }
  output.value=s.replaceAll("{{user}}", p.name || "{{user}}").trim();
  updateCounts();
