@@ -17,7 +17,7 @@ header h1{font-size:17px;margin:0}.wrap{max-width:1050px;margin:auto;padding:22p
 .card img,.placeholder{width:100%;aspect-ratio:1/1;object-fit:cover;background:#e8e8eb;display:block}.placeholder{display:grid;place-items:center;color:#999;font-size:38px}.card-body{padding:12px}.name{font-weight:700}.plot{font-size:13px;color:var(--muted);margin-top:5px}.count{font-size:11px;color:var(--muted);margin-top:9px}
 .back{margin-bottom:14px}.editor{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
 .top{display:grid;grid-template-columns:180px 1fr;gap:18px}.avatarbox img,.avatarbox .placeholder{width:180px;height:180px;border-radius:14px;object-fit:cover;cursor:pointer}
-label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}#plotMemo{min-height:180px}.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}.count-wrap{margin-top:4px}.template-btn{margin:0 0 12px}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}textarea{min-height:90px;resize:vertical}#plotMemo{min-height:220px}#output{min-height:220px}.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}.count-wrap{margin-top:4px}.template-btn{margin:0 0 12px}
 .field{margin-bottom:12px}.profile-row{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}.rowhead{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
 .section-title{font-weight:700;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.template{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:8px}.template-top{display:flex;gap:8px;align-items:flex-start}.template-top input[type=checkbox]{width:auto;margin-top:4px}.template-text{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:7px}.copybox{min-height:280px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px}
 .status{font-size:12px;color:var(--muted);margin-left:8px}
@@ -140,21 +140,16 @@ function refreshOutput(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
  let s="";
  const ts=db.templates.filter(t=>p.templateIds.includes(t.id));
- if(ts.length){s+="【AI・ナレーターへの指示】";ts.forEach((t,i)=>s+=(i?"
-":"")+t.text)}
+ if(ts.length){s+="【AI・ナレーターへの指示】\n";ts.forEach((t,i)=>s+=(i?"\n":"")+t.text);}
  if(p.memo){
-   if(s)s+="
-";
-   s+="【プロフィール】"+p.memo;
+   if(s)s+="\n";
+   s+="【プロフィール】\n"+p.memo;
  }
  const fields=p.fields.filter(f=>f.label||f.value);
  if(fields.length){
-   if(s)s+="
-";
-   s+="【追加項目】";
-   fields.forEach((f,i)=>{s+=(i?"
-":"")+(f.label||"項目")+"：
-"+(f.value||"")});
+   if(s)s+="\n";
+   s+="【追加項目】\n";
+   fields.forEach((f,i)=>{s+=(i?"\n":"")+(f.label||"項目")+"：\n"+(f.value||"")});
  }
  output.value=s.replaceAll("{{user}}", p.name || "{{user}}").trim();
  updateCounts();
