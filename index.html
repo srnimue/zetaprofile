@@ -140,16 +140,25 @@ function refreshOutput(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
  let s="";
  const ts=db.templates.filter(t=>p.templateIds.includes(t.id));
- if(ts.length){s+="【AI・ナレーターへの指示】\n";ts.forEach((t,i)=>s+=(i?"\n":"")+t.text);}
+ if(ts.length){
+   s+="【AI・ナレーターへの指示】\n";
+   ts.forEach((t,i)=>{
+     const lines=(t.text||"").split("\n").filter(x=>x.trim());
+     s+=lines.map(x=>"+ "+x.replace(/^\+\s*/,"")).join("\n");
+     if(i<ts.length-1)s+="\n";
+   });
+ }
  if(p.memo){
-   if(s)s+="\n";
+   if(s)s+="\n\n";
    s+="【プロフィール】\n"+p.memo;
  }
  const fields=p.fields.filter(f=>f.label||f.value);
  if(fields.length){
-   if(s)s+="\n";
-   s+="【追加項目】\n";
-   fields.forEach((f,i)=>{s+=(i?"\n":"")+(f.label||"項目")+"：\n"+(f.value||"")});
+   if(s)s+="\n\n";
+   fields.forEach((f,i)=>{
+     if(i)s+="\n\n";
+     s+=(f.label||"項目")+"：\n"+(f.value||"");
+   });
  }
  output.value=s.replaceAll("{{user}}", p.name || "{{user}}").trim();
  updateCounts();
