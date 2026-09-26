@@ -22,13 +22,17 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,texta
 .section-title{font-weight:700;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.template{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:8px}.template-top{display:flex;gap:8px;align-items:flex-start}.template-top input[type=checkbox]{width:auto;margin-top:4px}.template-text{white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:7px}.copybox{min-height:280px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:13px}
 .status{font-size:12px;color:var(--muted);margin-left:8px}
 @media(max-width:650px){.top{grid-template-columns:1fr}.avatarbox img,.avatarbox .placeholder{width:150px;height:150px}.grid{grid-template-columns:repeat(2,1fr)}}
+
+.sort-mode .card{cursor:default}
+.sort-controls{display:flex;gap:6px;padding:0 12px 12px}
+.sort-controls button{padding:7px 10px}
 </style>
 </head>
 <body>
 <header><h1>Zeta {{user}} プロフィール管理</h1><span id="saveStatus" class="status">自動保存</span></header>
 <div class="wrap">
 <section id="home">
-  <div class="toolbar"><button class="primary" onclick="newProfile()">＋ 新しい{{user}}</button><button onclick="openTemplates()">定型文ライブラリ</button></div>
+  <div class="toolbar"><button class="primary" onclick="newProfile()">＋ 新しい{{user}}</button><button onclick="openTemplates()">定型文ライブラリ</button><button onclick="toggleSortMode()">並べ替え</button></div>
   <div id="grid" class="grid"></div>
 </section>
 
@@ -85,6 +89,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,texta
 const KEY="zetaProfileManager_v1";
 let db=JSON.parse(localStorage.getItem(KEY)||'{"profiles":[],"templates":[]}');
 let currentId=null;
+let sortMode=false;
 
 function saveDB(){localStorage.setItem(KEY,JSON.stringify(db)); document.getElementById("saveStatus").textContent="保存済み";}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -96,10 +101,29 @@ function newProfile(){
 function renderHome(){
  document.getElementById("home").classList.remove("hidden");document.getElementById("edit").classList.add("hidden");document.getElementById("templatePage").classList.add("hidden");
  const g=document.getElementById("grid");
+ g.classList.toggle("sort-mode",sortMode);
  if(!db.profiles.length){g.innerHTML='<div style="grid-column:1/-1;color:#777">まだ{{user}}がありません。「新しい{{user}}」から作成できます。</div>';return}
- g.innerHTML=db.profiles.map(p=>`<div class="card" data-profile-id="${p.id}" onclick="openProfile('${p.id}')">
+ g.innerHTML=db.profiles.map((p,i)=>`<div class="card" data-profile-id="${p.id}" ${sortMode?'':'onclick="openProfile(\''+p.id+'\')"'} >
  ${p.image?`<img src="${p.image}" alt="">`:'<div class="placeholder">＋</div>'}
- <div class="card-body"><div class="name">${esc(p.name||"無題の{{user}}")}</div><div class="plot">${esc(p.plot||"プロット名未設定")}</div><div class="count">${p.fields.length}項目 / ${p.templateIds.length}個の定型指示</div></div></div>`).join("");
+ <div class="card-body"><div class="name">${esc(p.name||"無題の{{user}}")}</div><div class="plot">${esc(p.plot||"プロット名未設定")}</div></div>
+ ${sortMode?`<div class="sort-controls">
+   <button type="button" onclick="moveProfile(${i},-1)" ${i===0?'disabled':''}>↑ 上へ</button>
+   <button type="button" onclick="moveProfile(${i},1)" ${i===db.profiles.length-1?'disabled':''}>↓ 下へ</button>
+ </div>`:''}
+ </div>`).join("");
+}
+function toggleSortMode(){
+ sortMode=!sortMode;
+ renderHome();
+}
+function moveProfile(index,delta){
+ const to=index+delta;
+ if(to<0||to>=db.profiles.length)return;
+ const tmp=db.profiles[index];
+ db.profiles[index]=db.profiles[to];
+ db.profiles[to]=tmp;
+ saveDB();
+ renderHome();
 }
 function openProfile(id){
  currentId=id;const p=db.profiles.find(x=>x.id===id);if(!p)return;
@@ -140,25 +164,16 @@ function refreshOutput(){
  const p=db.profiles.find(x=>x.id===currentId);if(!p)return;
  let s="";
  const ts=db.templates.filter(t=>p.templateIds.includes(t.id));
- if(ts.length){
-   s+="【AI・ナレーターへの指示】\n";
-   ts.forEach((t,i)=>{
-     const lines=(t.text||"").split("\n").filter(x=>x.trim());
-     s+=lines.map(x=>"+ "+x.replace(/^\+\s*/,"")).join("\n");
-     if(i<ts.length-1)s+="\n";
-   });
- }
+ if(ts.length){s+="【AI・ナレーターへの指示】\n";ts.forEach((t,i)=>s+=(i?"\n":"")+t.text);}
  if(p.memo){
-   if(s)s+="\n\n";
+   if(s)s+="\n";
    s+="【プロフィール】\n"+p.memo;
  }
  const fields=p.fields.filter(f=>f.label||f.value);
  if(fields.length){
-   if(s)s+="\n\n";
-   fields.forEach((f,i)=>{
-     if(i)s+="\n\n";
-     s+=(f.label||"項目")+"：\n"+(f.value||"");
-   });
+   if(s)s+="\n";
+   s+="【追加項目】\n";
+   fields.forEach((f,i)=>{s+=(i?"\n":"")+(f.label||"項目")+"：\n"+(f.value||"")});
  }
  output.value=s.replaceAll("{{user}}", p.name || "{{user}}").trim();
  updateCounts();
@@ -175,7 +190,34 @@ function openTemplates(){document.getElementById("home").classList.add("hidden")
 function addTemplate(){db.templates.push({id:uid(),title:"新しい定型文",text:""});saveDB();renderLibrary()}
 function renderLibrary(){
  const box=document.getElementById("templateLibrary");
- box.innerHTML=db.templates.map((t,i)=>`<div class="profile-row"><div class="rowhead"><input value="${esc(t.title)}" oninput="db.templates[${i}].title=this.value;saveDB();renderSelectedTemplates()"><button class="danger" onclick="db.templates.splice(${i},1);saveDB();renderLibrary();renderSelectedTemplates()">削除</button></div><textarea placeholder="AI・ナレーターへの指示…" oninput="db.templates[${i}].text=this.value;saveDB();renderSelectedTemplates();refreshOutput()">${esc(t.text)}</textarea></div>`).join("") || '<span style="color:#777">まだ定型文がありません。</span>';
+ box.innerHTML=db.templates.map((t,i)=>`<div class="profile-row">
+   <div class="rowhead">
+     <input value="${esc(t.title)}" oninput="db.templates[${i}].title=this.value;saveDB();renderSelectedTemplates()">
+     <div class="actions">
+       <button type="button" onclick="copyTemplate(${i})">コピー</button>
+       <button class="danger" onclick="db.templates.splice(${i},1);saveDB();renderLibrary();renderSelectedTemplates()">削除</button>
+     </div>
+   </div>
+   <textarea placeholder="AI・ナレーターへの指示…" oninput="db.templates[${i}].text=this.value;saveDB();renderSelectedTemplates();refreshOutput()">${esc(t.text)}</textarea>
+ </div>`).join("") || '<span style="color:#777">まだ定型文がありません。</span>';
+}
+async function copyTemplate(index){
+ const t=db.templates[index];
+ if(!t)return;
+ try{
+   await navigator.clipboard.writeText(t.text||"");
+   saveStatus.textContent="コピーしました";
+   setTimeout(()=>saveStatus.textContent="自動保存",1200);
+ }catch(e){
+   const ta=document.createElement("textarea");
+   ta.value=t.text||"";
+   document.body.appendChild(ta);
+   ta.select();
+   document.execCommand("copy");
+   ta.remove();
+   saveStatus.textContent="コピーしました";
+   setTimeout(()=>saveStatus.textContent="自動保存",1200);
+ }
 }
 function seed(){
  if(db.templates.length)return;
